@@ -2,7 +2,7 @@
 
 This repository contains the sample code for the paper MobileHand: Real-time 3D Hand Shape and Pose Estimation from Color Image
 
-[**Paper**]() | [**Video**]() | [**Results on STB Dataset B1 Random**](https://www.youtube.com/embed/vIfJSPhprnU) | [**Results on STB Dataset B1 Counting**](https://www.youtube.com/embed/qrmRm-gF02A)
+[**Paper**]() | [**Video**](https://youtube.com/embed/bvVnJkGhJlI) | [**Results on STB Dataset B1 Random**](https://www.youtube.com/embed/vIfJSPhprnU) | [**Results on STB Dataset B1 Counting**](https://www.youtube.com/embed/qrmRm-gF02A)
 
 If you find our code or paper useful, please consider citing
 ```

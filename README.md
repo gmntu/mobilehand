@@ -66,6 +66,16 @@ python demo.py --dataset freihand
 ![](data/freihand_result.png)
 
 
+## Real-time demo
+To test on a sample video.mp4 file run:
+```
+python realtime.py
+```
+
+![](data/video_result.gif)
+
+To test from your own camera or video file, you can uncomment/edit lines [24 and 25 of realtime.py](https://github.com/gmntu/mobilehand/blob/8ca106ff848e030eb3c20b66271e910e6f52edcb/code/realtime.py#L24)
+
 ## References for dataset
 
 ##### [2017 ICIP] A Hand Pose Tracking Benchmark from Stereo Matching. [\[PDF\]](https://ieeexplore.ieee.org/document/8296428)  [\[Project\]](https://sites.google.com/site/zhjw1988/) [\[Code\]](https://github.com/zhjwustc/icip17_stereo_hand_pose_dataset)

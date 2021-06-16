@@ -33,7 +33,7 @@ class MANO(nn.Module):
         #################################
         ### Load parameters from file ###
         #################################
-        file_path = '../model/MANO_'+self.side+'_NEW.pkl'
+        file_path = '../model/MANO_'+self.side+'.pkl'
         dd = pickle.load(open(file_path, 'rb'), encoding='latin1')
         
         # Standardize naming convention to a single capital letter

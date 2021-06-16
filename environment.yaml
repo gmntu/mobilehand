@@ -16,3 +16,4 @@ dependencies:
   - torchvision=0.6.0
   - pip:
     - opencv-python==4.2.0.34
+    - chumpy==0.70

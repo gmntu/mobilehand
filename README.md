@@ -29,6 +29,10 @@ Next, you will need to download the MANO right hand model
 * Download Models & Code (`mano_v1_2.zip`)
 * Unzip and copy the file `mano_v1_2/models/MANO_RIGHT.pkl` into the `mobilehand/model` folder
 
+
+The following steps could be ignored by installing the latest version of [Chumpy 0.70](https://pypi.org/project/chumpy/) which supports Python 3.
+
+<strike>
 To allow the use of MANO model in Python 3 environment, we will need to remove Chumpy objects from the original `MANO_RIGHT.pkl` model. The following steps are adapted from [smplx repo](https://github.com/vchoutas/smplx/blob/master/tools/README.md):
 * In a Python 2 virtual environment with [Chumpy](https://github.com/mattloper/chumpy) and [tqdm](https://github.com/tqdm/tqdm) installed
 ```
@@ -42,6 +46,7 @@ pip install tqdm
 ```
 python model/clean_ch.py --input-models model/MANO_RIGHT.pkl --output-folder model/
 ```
+</strike>
 
 ## Demo
 Change directory to the folder `mobilehand/code/`

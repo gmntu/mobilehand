@@ -1,5 +1,5 @@
 ###############################################################################
-### MobilenetV3 adapted from PyTorch                                             
+### MobilenetV3 adapted from PyTorch
 ### https://github.com/rwightman/gen-efficientnet-pytorch (More generic but complex code)
 ### https://github.com/d-li14/mobilenetv3.pytorch (Simpler only two type large and small)
 ###
@@ -172,13 +172,13 @@ class MobileNetV3(nn.Module):
         self._initialize_weights()
 
     def forward(self, x):
-        x = self.features(x) 		# torch.Size([1, 160, 7, 7]) 96
-        x = self.conv(x) 			# torch.Size([1, 960, 7, 7]  576
-        x = self.avgpool(x) 		# torch.Size([1, 960, 1, 1]) 576
-        x = x.view(x.size(0), -1) 	# torch.Size([1, 960]) 		 576
+        x = self.features(x)        # torch.Size([1, 160, 7, 7]) 96
+        x = self.conv(x)            # torch.Size([1, 960, 7, 7]  576
+        x = self.avgpool(x)         # torch.Size([1, 960, 1, 1]) 576
+        x = x.view(x.size(0), -1)   # torch.Size([1, 960])       576
         # Note: Comment off the classifier as
         # for MobileHand we only need until the image features
-        # x = self.classifier(x) 		# torch.Size([1, 1000]) 	 1000
+        # x = self.classifier(x)        # torch.Size([1, 1000])      1000
         return x
 
     def _initialize_weights(self):

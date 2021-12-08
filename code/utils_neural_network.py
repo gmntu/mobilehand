@@ -1,13 +1,12 @@
 ###############################################################################
-### Deep neural network to learn to regress hand model from images          
+### Neural network to regress hand model from images
 ### Adapted from 
-###     MandyMo https://github.com/MandyMo/pytorch_HMR     
-###     Boukhayma https://github.com/boukhayma/3dhand      
+###     MandyMo:   https://github.com/MandyMo/pytorch_HMR
+###     Boukhayma: https://github.com/boukhayma/3dhand
 ###
-### Input : 2D image (224 x 224 pixels)                                     
-###
-### Output: Hand joint angles alpha(23), hand shape beta(10),                       
-### Output: Global rotation R(3), planar translation(2), scaling(1)                    
+### Input : 2D image (224 x 224 pixels)
+### Output: Hand joint angles alpha(23), hand shape beta(10),
+###         Global rotation(3), planar translation(2), scaling(1)
 ###############################################################################
 
 import torch
@@ -25,7 +24,7 @@ class Regressor(LinearModel):
 
         self.num_param = num_param
         self.num_iters = num_iters
-        mean = np.zeros(self.num_param, dtype=np.float)
+        mean = np.zeros(self.num_param, dtype=np.float32)
         mean_param = np.tile(mean, max_batch_size).reshape((max_batch_size, -1)) # [bs, num_param]
         self.register_buffer('mean_param', torch.from_numpy(mean_param).float())
     
@@ -49,14 +48,14 @@ class Regressor(LinearModel):
 
 
 class HMR(nn.Module):
-    def __init__(self, stb_dataset=False):
+    def __init__(self, arg):
         super(HMR, self).__init__()
 
         # Number of parameters to be regressed
         # Scaling:1, Translation:2, Global rotation :3, Beta:10, Joint angle:23
         self.num_param = 39 # 1 + 2 + 3 + 10 + 23
         self.max_batch_size = 80
-        self.stb_dataset = stb_dataset
+        self.stb_dataset = True if arg.data=='stb' else False
 
         # Load encoder 
         self.encoder = utils_mobilenet_v3.mobilenetv3_small() # MobileNetV3
@@ -76,7 +75,7 @@ class HMR(nn.Module):
             max_batch_size=self.max_batch_size)
 
         # Load MANO hand model layer
-        self.mano = MANO('right')
+        self.mano = MANO()
 
 
     def compute_results(self, param):
@@ -106,19 +105,19 @@ class HMR(nn.Module):
         keypt = joint[:,:,:2] * scale.unsqueeze(1).unsqueeze(2) + trans.unsqueeze(1)
 
         # if self.stb_dataset: # For publication to generate images for STB dataset
-        if not self.stb_dataset:
-            vert  = vert  - joint[:,9,:].unsqueeze(1) # Make all vert relative to middle finger MCP
+        # if not self.stb_dataset:
+        #     vert  = vert  - joint[:,9,:].unsqueeze(1) # Make all vert relative to middle finger MCP
         joint = joint - joint[:,9,:].unsqueeze(1) # Make all joint relative to middle finger MCP
 
         return keypt, joint, vert, ang # [bs,21,2], [bs,21,3], [bs,778,3], [bs,23]
 
 
-    def forward(self, inputs, evaluation=False, get_feature=False):
+    def forward(self, inputs, evaluation=True, get_feature=False):
         features = self.encoder(inputs)
         params   = self.regressor(features)
 
         if evaluation:
-            # Only use and return final param
+            # Only return final param
             keypt, joint, vert, ang = self.compute_results(params[-1])
 
             if get_feature:
@@ -153,8 +152,8 @@ if __name__ == '__main__':
     image = torch.randn(bs,3,224,224)
     keypt, joint, vert, ang, params = model(image)
 
-    print('keypt',keypt.shape) # [bs,21,2]
-    print('joint',joint.shape) # [bs,21,3]
-    print('vert',vert.shape) # [bs,778,3]
-    print('ang',ang.shape) # [bs,23]
-    print('params',len(params),params[0].shape) # 3 [bs,39]
+    print('keypt', keypt.shape) # [bs,21,2]
+    print('joint', joint.shape) # [bs,21,3]
+    print('vert', vert.shape) # [bs,778,3]
+    print('ang', ang.shape) # [bs,23]
+    print('params', len(params),params[0].shape) # 3 [bs,39]

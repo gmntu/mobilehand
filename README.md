@@ -1,87 +1,47 @@
 # MobileHand: Real-time 3D Hand Shape and Pose Estimation from Color Image
 
-This repository contains the sample code for the paper MobileHand: Real-time 3D Hand Shape and Pose Estimation from Color Image
+![](data/video_result.gif)
 
-[**Paper**](https://doi.org/10.1007/978-3-030-63820-7_52) | [**Video**](https://youtube.com/embed/bvVnJkGhJlI) | [**Results on STB Dataset B1 Random**](https://www.youtube.com/embed/vIfJSPhprnU) | [**Results on STB Dataset B1 Counting**](https://www.youtube.com/embed/qrmRm-gF02A)
+This repo contains the source code for MobileHand, real-time estimation of 3D hand shape and pose from a single color image running at over 110 Hz on a GPU or 75 Hz on a CPU.
 
-If you find our code or paper useful, please consider citing
-```
+[**Paper**](https://www.researchgate.net/publication/347025951_MobileHand_Real-Time_3D_Hand_Shape_and_Pose_Estimation_from_Color_Image) | [**Project**](https://gmntu.github.io/mobilehand/) | [**Video**](https://www.youtube.com/watch?v=bvVnJkGhJlI)
+
+
+If you find MobileHand useful for your work, please consider citing
+```BibTeX
 @inproceedings{MobileHand:2020,
-  title = {MobileHand: Real-time 3D Hand Shape and Pose Estimation from Color Image},
-  author = {Guan Ming, Lim and Prayook, Jatesiktat and Wei Tech, Ang},
+  title     = {MobileHand: Real-time 3D Hand Shape and Pose Estimation from Color Image},
+  author    = {Guan Ming, Lim and Prayook, Jatesiktat and Wei Tech, Ang},
   booktitle = {27th International Conference on Neural Information Processing (ICONIP)},
-  year = {2020}
+  year      = {2020}
 }
 ```
 
-## Installation
-The simplest way to run our implementation is to use anaconda.
-
-You can create an anaconda environment called `mobilehand` with
+## Setup
+The simplest way to run our implementation is to use anaconda and create an environment called `mobilehand`
 ```
 conda env create -f environment.yaml
 conda activate mobilehand
 ```
 
-Next, you will need to download the MANO right hand model
+Next, download MANO right hand model
 * Go to [MANO project page](http://mano.is.tue.mpg.de/)
 * Click on _Sign In_ and register for your account
 * Download Models & Code (`mano_v1_2.zip`)
 * Unzip and copy the file `mano_v1_2/models/MANO_RIGHT.pkl` into the `mobilehand/model` folder
 
-
-The following steps could be ignored by installing the latest version of [Chumpy 0.70](https://pypi.org/project/chumpy/) which supports Python 3.
-
-<strike>
-To allow the use of MANO model in Python 3 environment, we will need to remove Chumpy objects from the original `MANO_RIGHT.pkl` model. The following steps are adapted from [smplx repo](https://github.com/vchoutas/smplx/blob/master/tools/README.md):
-* In a Python 2 virtual environment with [Chumpy](https://github.com/mattloper/chumpy) and [tqdm](https://github.com/tqdm/tqdm) installed
-```
-conda create -n py27 python=2.7
-conda activate py27
-pip install chumpy
-pip install tqdm
-```
-
-* Run the following command to remove any Chumpy objects and it will create a new file `MANO_RIGHT_NEW.pkl`:
-```
-python model/clean_ch.py --input-models model/MANO_RIGHT.pkl --output-folder model/
-```
-</strike>
-
 ## Demo
-Change directory to the folder `mobilehand/code/`
 ```
-cd code/
-```
-To test on a sample image from the STB dataset run:
-```
-python demo.py --dataset stb
-```
-To test on a sample image from the FreiHAND dataset run:
-```
-python demo.py --dataset freihand
+cd code/ # Change directory to the folder `mobilehand/code/`
+
+python demo.py -m image -d stb      # Test on sample image (STB dataset)
+python demo.py -m image -d freihand # Test on sample image (FreiHAND dataset)
+python demo.py -m video             # Test on sample video
+python demo.py -m camera            # Test with webcam
+python demo.py -m camera -c         # Add -c to enable GPU processing
 ```
 
-## Sample results
-
-- STB dataset\
-![](data/stb_result.png)
-
-- FreiHAND dataset\
-![](data/freihand_result.png)
-
-
-## Real-time demo
-To test on a sample video.mp4 file run:
-```
-python realtime.py
-```
-
-![](data/video_result.gif)
-
-To test from your own camera or video file, you can uncomment/edit lines [24 and 25 of realtime.py](https://github.com/gmntu/mobilehand/blob/8ca106ff848e030eb3c20b66271e910e6f52edcb/code/realtime.py#L24)
-
-## References for dataset
+## Dataset
 
 ##### [2017 ICIP] A Hand Pose Tracking Benchmark from Stereo Matching. [\[PDF\]](https://ieeexplore.ieee.org/document/8296428)  [\[Project\]](https://sites.google.com/site/zhjw1988/) [\[Code\]](https://github.com/zhjwustc/icip17_stereo_hand_pose_dataset)
 *Jiawei Zhang, Jianbo Jiao, Mingliang Chen, Liangqiong Qu, Xiaobin Xu, and Qingxiong Yang*
@@ -91,7 +51,7 @@ To test from your own camera or video file, you can uncomment/edit lines [24 and
 _Christian Zimmermann, Duygu Ceylan, Jimei Yang, Bryan Russell, Max Argus, Thomas Brox_
 
 
-## References on 3D hand shape and pose estimation from color image
+## Related works
 
 ##### [CVPR 2019] Pushing the Envelope for RGB-based Dense 3D Hand Pose Estimation via Neural Rendering. [\[PDF\]](http://openaccess.thecvf.com/content_CVPR_2019/papers/Baek_Pushing_the_Envelope_for_RGB-Based_Dense_3D_Hand_Pose_Estimation_CVPR_2019_paper.pdf)
 _Seungryul Baek, Kwang In Kim, Tae-Kyun Kim_
@@ -121,7 +81,7 @@ _Dominik Kulon, Riza Alp Güler, Iasonas Kokkinos, Michael Bronstein, Stefanos Z
 _Yuxiao Zhou, Marc Habermann, Weipeng Xu, Ikhsanul Habibie, Christian Theobalt, Feng Xu_
 
 
-## References on other key methods that influence this work
+## Key references
 
 ##### [MVA 2019] Accurate Hand Keypoint Localization on Mobile Devices. [\[PDF\]](http://users.ics.forth.gr/~argyros/mypapers/2019_05_MVA_hand2Dkeypoints.pdf) [\[Code\]](https://github.com/FORTH-ModelBasedTracker/MonocularRGB_2D_Handjoints_MVA19)
 _Filippos Gouidis, Paschalis Panteleris, Iason Oikonomidis, Antonis Argyros_

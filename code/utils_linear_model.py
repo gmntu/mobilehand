@@ -1,6 +1,6 @@
 ###############################################################################
 ### Adapted from PyTorch implementation of HMR
-###     MandyMo https://github.com/MandyMo/pytorch_HMR/blob/master/src/LinearModel.py
+###     MandyMo: https://github.com/MandyMo/pytorch_HMR/blob/master/src/LinearModel.py
 ###############################################################################
 
 import sys

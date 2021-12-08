@@ -1,10 +1,8 @@
 ###############################################################################
 ### Perform linear blend skinning
-###               
-### Adapted from https://github.com/vchoutas/smplx/blob/master/smplx/lbs.py               
+### Adapted from https://github.com/vchoutas/smplx/blob/master/smplx/lbs.py
 ###
 ### Input : Shape, pose and all the learned parameters
-###
 ### Output: 3D vertices, joints
 ###############################################################################
 
@@ -186,25 +184,3 @@ def batch_rigid_transform(rmats, joints, parents):
         torch.matmul(transforms, joints_homogen), [3, 0, 0, 0, 0, 0, 0, 0])
 
     return posed_joints, rel_transforms
-
-
-
-def compute_normals(vertices, F, V, map_face2vert): # Added by GM
-    # Compute normals of the faces
-    v0 = vertices[:, F[:,0],:] # [bs, 1538, 3]
-    v1 = vertices[:, F[:,1],:] # [bs, 1538, 3]
-    v2 = vertices[:, F[:,2],:] # [bs, 1538, 3]
-    # Note: v0,v1,v2 are in a.c.w order so to get normal pointing out of mesh need to cross v01 by v02
-    # Note: torch.cross better put dim=2 else it will default to the first dimension found with size three
-    # which may conincide with batchsize of three!
-    normals  = torch.cross((v1-v0),(v2-v0), dim=2) # [bs, 1538, 3] 
-
-    # Compute normals of the vertices
-    bs = vertices.shape[0]
-    normals_vert = torch.zeros((bs, V.shape[0],3)) # [bs, 778, 3] 
-    for i in range(len(map_face2vert)): # Only loop 778 (no. of verts)
-        normals_vert[:,i,:] = torch.sum(normals[:, map_face2vert[i], :], dim=1)
-
-    normals_vert /= torch.norm(normals_vert, dim=2).unsqueeze(2)
-
-    return normals_vert 

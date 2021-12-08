@@ -1,18 +1,9 @@
 ###############################################################################
-### Make use of Max Planck Institue SMPL, MANO, SMPL+H, SMPL-X models
+### Make use of Max Planck Institue MANO model
+### Ensure the MANO_RIGHT.pkl file is in the /model folder
 ###
-### Note: That some steps are required to remove chumpy from the original models 
-###       and also merge mano to smplh, please refer to 
-###       https://github.com/vchoutas/smplx
-###     
-### Ensure the models are in the following order: 
-### Those models with _NEW are modified (chumpy removed, smplh merged with mano)
-### model
-### ├── MANO_RIGHT_NEW.pkl
-###
-### Input : Shape, pose parameters                                       
-###
-### Output: 3D articulated mesh model vertices, joints
+### Input : Shape and pose parameters
+### Output: 3D mesh vertices and joints
 ###############################################################################
 
 import cv2
@@ -21,21 +12,19 @@ import pickle
 import numpy as np
 import torch.nn as nn
 
-from utils_linear_blend_skinning import lbs, compute_normals
+from utils_linear_blend_skinning import lbs
 
 
 class MANO(nn.Module):
-    def __init__(self, side='right'):
+    def __init__(self):
         super(MANO, self).__init__()
-
-        self.side = side.upper() # Convert to uppercase 'LEFT' or 'RIGHT' hand
 
         #################################
         ### Load parameters from file ###
         #################################
-        file_path = '../model/MANO_'+self.side+'.pkl'
+        file_path = '../model/MANO_RIGHT.pkl'
         dd = pickle.load(open(file_path, 'rb'), encoding='latin1')
-        
+
         # Standardize naming convention to a single capital letter
         self.V = dd['v_template']       # Vertices of template model (V)
         self.F = dd['f']                # Faces of the model (F)
@@ -46,7 +35,6 @@ class MANO(nn.Module):
         W      = dd['weights']          # Weights that are learned (W)
         C      = dd['hands_components'] # Components of hand PCA (C)
         M      = dd['hands_mean']       # Mean hand PCA pose (M)
-        # E      = dd['hands_coeffs']     # coEfficients (E) not sure what it does
 
         # Original parameter size and data type
         # V (778, 3)      float64
@@ -58,7 +46,6 @@ class MANO(nn.Module):
         # W (778, 16)     float64
         # C (45, 45)      float64
         # M (45,)         float64
-        # E (1554, 45)    float64
 
 
         ########################
@@ -109,24 +96,24 @@ class MANO(nn.Module):
         #       0 (Wrist)
 
         # Rearrange MANO joint convention to standard convention:
-        #  0:Wrist, 
+        #  0:Wrist,
         #  1:TMCP,  2:TPIP,  3:TDIP,  4:TTIP (Thumb)
         #  5:IMCP,  6:IPIP,  7:IDIP,  8:ITIP (Index)
         #  9:MMCP, 10:MPIP, 11:MDIP, 12:MTIP (Middle)
         # 13:RMCP, 14:RPIP, 15:RDIP, 16:RTIP (Ring)
         # 17:LMCP, 18:LPIP, 19:LDIP, 20:LTIP (Little)
-        self.remap_joint = [0,           # Wrist
-                           13,14,15,16, # Thumb
-                            1, 2, 3,17, # Index
-                            4, 5, 6,18, # Middle
-                           10,11,12,19, # Ring
-                            7, 8, 9,20] # Little
+        self.remap_joint = [ 0,          # Wrist
+                            13,14,15,16, # Thumb
+                             1, 2, 3,17, # Index
+                             4, 5, 6,18, # Middle
+                            10,11,12,19, # Ring
+                             7, 8, 9,20] # Little
 
         # Vertices corresponding to fingertips
         # Thumb, Index, Middle, Ring, Little
         self.register_buffer('fingertip_vert', torch.tensor(
             [745,333,444,555,672], dtype=torch.int64)) # My own definition
-            # [744,320,443,555,672], dtype=torch.int64)) # Freihand definition
+            # [744,320,443,555,672], dtype=torch.int64)) # FreiHAND definition
             # [734,333,443,555,678], dtype=torch.int64)) # End-to-end Hand Mesh Recovery from a Monocular RGB Image (Zhang 2019)
 
 
@@ -134,13 +121,13 @@ class MANO(nn.Module):
         ### Convert joint angle to pose ###
         ###################################
         Z = self.generate_Zmat(S, self.V, J)
-        self.register_buffer('Z_', torch.as_tensor(Z, dtype=torch.float32)) # [23, 45] 
+        self.register_buffer('Z_', torch.as_tensor(Z, dtype=torch.float32)) # [23, 45]
 
 
         #########################
         ### Define pose limit ###
         #########################
-        # Values adapted from 
+        # Values adapted from
         # HOnnotate: A method for 3D Annotation of Hand and Object Poses Supplementary Material
         # https://www.tugraz.at/fileadmin/user_upload/Institute/ICG/Documents/team_lepetit/images/hampali/supplementary.pdf
         plim = np.array([
@@ -172,7 +159,7 @@ class MANO(nn.Module):
         ################################
         alim = np.array([
             # MCP a/a, MCP f/e, PIP f/e, DIP f/e
-            [-20,30], [-10,90], [-1,90], [-1,90], # Index [min,max] 
+            [-20,30], [-10,90], [-1,90], [-1,90], # Index [min,max]
             [-20,10], [-10,90], [-1,90], [-1,90], # Middle
             [-20,10], [-10,90], [-1,90], [-1,90], # Ring
             [-30,20], [-10,90], [-1,90], [-1,90], # Little
@@ -193,18 +180,18 @@ class MANO(nn.Module):
     def convert_pca_to_pose(self, ppca):
         # Note: (bs, 45) dot (45, 45) = (bs, 45) + (bs, 45) = (bs, 45)
         # Then reshape to (15, 3) to be used as pose input to feedforward to model
-        bs = ppca.shape[0] # Get batch size 
+        bs = ppca.shape[0] # Get batch size
         n = ppca.shape[1] # Get number of components used
-        
+
         return (torch.matmul(ppca, self.C_[:n, :]) + self.M_).view(bs,-1,3) # [bs, 15, 3]
 
 
     def convert_ang_to_pose(self, ang):
         # Note: (bs, 23) dot (23, 45) = (bs, 45)
         # Then reshape to (15, 3) to be used as pose input to feedforward to model
-        bs = ang.shape[0] # Get batch size 
-        
-        return (torch.matmul(ang, self.Z_)).view(bs,-1,3) # [bs, 15, 3]        
+        bs = ang.shape[0] # Get batch size
+
+        return (torch.matmul(ang, self.Z_)).view(bs,-1,3) # [bs, 15, 3]
 
 
     def forward(self, beta, pose, rvec, tvec, root):
@@ -257,7 +244,7 @@ class MANO(nn.Module):
             vertices += tvec.unsqueeze(dim=1)
             joints += tvec.unsqueeze(dim=1)
 
-        return vertices, joints        
+        return vertices, joints
 
 
     def compute_ang_limit(self, ang):
@@ -274,7 +261,7 @@ class MANO(nn.Module):
 
         # Note: MANO pose has a total of 15 joints
         #       Each joint 3 DoFs thus pose has a total 15*3 = 45 values
-        # But actual human hand only has a total of 21/22/23 DoFs 
+        # But actual human hand only has a total of 21/22/23 DoFs
         # (21 DoFs for 4 fingers(4x4) + 1 thumb(5/6/7))
         # Thus joint angle will have 23 values (using thumb with 7 DoFs)
 
@@ -330,7 +317,7 @@ class MANO(nn.Module):
         Z[19:22,39:42] = np.eye(3) # 19:MCP rx, 20:MCP ry, 21:MCP rz
         Z[   22,42:45] = rotate_thumb(Vs[thumb_left,:],Vs[thumb_right,:]).dot(
             rotate_finger(Jrest[15,:],Jrest[14,:]))[2,:] # 22:IP flex/ext
-        
+
         return Z
 
 
@@ -341,18 +328,12 @@ if __name__ == '__main__':
     import argparse
     import open3d as o3d
 
-    # Get argument
-    parser = argparse.ArgumentParser(description='Testing MPI model')
-    parser.add_argument('--disp', action='store_true', help='Display model')
-    args = parser.parse_args()
-    disp = args.disp
-
     bs = 1 # Batchsize
     beta = torch.zeros([bs,10], dtype=torch.float32)
     rvec = torch.zeros([bs,3], dtype=torch.float32)
     tvec = torch.zeros([bs,3], dtype=torch.float32)
 
-    model = MANO('right')
+    model = MANO()
     pose = torch.zeros([bs,15,3], dtype=torch.float32)
     ppca = torch.zeros([bs,45], dtype=torch.float32)
     # pose = model.convert_pca_to_pose(ppca)
@@ -364,26 +345,25 @@ if __name__ == '__main__':
     ########################################
     ### Quick visualization using Open3D ###
     ########################################
-    if disp:
-        # Create a reference frame 10 cm
-        mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1)        
-        # Draw mesh model
-        mesh = o3d.geometry.TriangleMesh()
-        mesh.vertices = o3d.utility.Vector3dVector(vertices[0,:,:])
-        mesh.triangles = o3d.utility.Vector3iVector(model.F)
-        mesh.compute_vertex_normals()
-        mesh.paint_uniform_color([0.75, 0.75, 0.75])
-        # Draw wireframe
-        ls = o3d.geometry.LineSet.create_from_triangle_mesh(mesh)
-        ls.paint_uniform_color([0.75, 0.75, 0.75])
-        # Draw joints
-        mesh_spheres = []
-        for j in joints[0,:,:]:
-            m = o3d.geometry.TriangleMesh.create_sphere(radius=0.001)
-            m.compute_vertex_normals()
-            m.paint_uniform_color([1,0,0])
-            m.translate(j)
-            mesh_spheres.append(m)
+    # Create a reference frame 10 cm
+    mesh_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1)
+    # Draw mesh model
+    mesh = o3d.geometry.TriangleMesh()
+    mesh.vertices = o3d.utility.Vector3dVector(vertices[0,:,:])
+    mesh.triangles = o3d.utility.Vector3iVector(model.F)
+    mesh.compute_vertex_normals()
+    mesh.paint_uniform_color([0.75, 0.75, 0.75])
+    # Draw wireframe
+    ls = o3d.geometry.LineSet.create_from_triangle_mesh(mesh)
+    ls.paint_uniform_color([0.75, 0.75, 0.75])
+    # Draw joints
+    mesh_spheres = []
+    for j in joints[0,:,:]:
+        m = o3d.geometry.TriangleMesh.create_sphere(radius=0.001)
+        m.compute_vertex_normals()
+        m.paint_uniform_color([1,0,0])
+        m.translate(j)
+        mesh_spheres.append(m)
 
-        o3d.visualization.draw_geometries([mesh, mesh_frame])
-        o3d.visualization.draw_geometries([ls, mesh_frame] + mesh_spheres)
+    o3d.visualization.draw_geometries([mesh, mesh_frame])
+    o3d.visualization.draw_geometries([ls, mesh_frame] + mesh_spheres)
